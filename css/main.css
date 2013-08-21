@@ -1,0 +1,57 @@
+html {
+    height: 100%;
+}
+
+body {
+    background-color: #222;
+    color: white;
+    height: 100%;
+}
+
+.container-outer {
+    height: 100%;
+    overflow: scroll;
+}
+
+.container-inner {
+    width: 10000px;
+}
+
+.container-product {
+   
+    
+    float: left;
+    margin:5px 5px 0 5px;
+}
+
+.container-item {
+    margin: 15px;
+
+}
+.rular{
+	color:#444;
+	background-color:#444;
+	border-color: #444;
+}
+.container-item-inner {
+    padding: 10px;
+}
+
+.itemImage {
+    height: 200px;
+    width: 200px;
+   
+}
+
+.item-name, .item-price{
+    padding-top:3px;
+    border-top: 1px solid gray;
+}
+
+.original-price{
+    text-decoration:line-through;
+}
+
+.popover-content, .popover-inner, .popover-title{
+	color:black;
+}
