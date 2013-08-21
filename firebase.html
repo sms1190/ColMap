@@ -8,69 +8,71 @@
 	#map-canvas { height: 100% }
 	</style>
 	<script src='https://cdn.firebase.com/v0/firebase.js'></script>
-<script src="js/jquery-1.9.1.min.js" type="application/javascript"></script>
-<script src="js/underscore.js" type="application/javascript"></script>
-<script src="js/backbone.js" type="application/javascript"></script>
-<script src="js/bootstrap.min.js" type="application/javascript"></script>
-<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-	
+	<script src="js/jquery-1.9.1.min.js" type="application/javascript"></script>
+	<script src="js/underscore.js" type="application/javascript"></script>
+	<script src="js/backbone.js" type="application/javascript"></script>
+	<script src="js/bootstrap.min.js" type="application/javascript"></script>
+	<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+	<script src="js/jquery.geocomplete.js"></script>	
 	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCP8B3gdxiokoKzoP7RhXYJZUVqiquaW_g&sensor=true"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places"></script>
 	<script>
-	var map;
-	var directionsDisplay;
-	var directionsService = new google.maps.DirectionsService();
-	var lanlong=[];
-	function initialize() {
-		var mapOptions = {
-			zoom: 4,
-			center: new google.maps.LatLng(-25.363882,131.044922),
-			mapTypeId: google.maps.MapTypeId.ROADMAP
-		};
-		
-		map = new google.maps.Map(document.getElementById('map-canvas'),
-			mapOptions);
-		directionsDisplay = new google.maps.DirectionsRenderer();
-		directionsDisplay.setMap(map);
-		google.maps.event.addListener(map, 'click', function(e) {
-			myDataRef.push({"mb": e.latLng.mb,"nb":e.latLng.nb});
-			if(!isunique(lanlong,{"mb": e.latLng.mb,"nb":e.latLng.nb})){
-				lanlong.push({"mb": e.latLng.mb,"nb":e.latLng.nb});
-			}
-			placeMarker(e.latLng, map);
+	
+		var map;
+		var directionsDisplay;
+		var directionsService = new google.maps.DirectionsService();
+		var lanlong=[];
+		function initialize() {
+			var mapOptions = {
+				zoom: 4,
+				center: new google.maps.LatLng(-25.363882,131.044922),
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+
+			map = new google.maps.Map(document.getElementById('map-canvas'),
+				mapOptions);
+			directionsDisplay = new google.maps.DirectionsRenderer();
+			directionsDisplay.setMap(map);
+			google.maps.event.addListener(map, 'click', function(e) {
+				myDataRef.push({"mb": e.latLng.mb,"nb":e.latLng.nb});
+				if(!isunique(lanlong,{"mb": e.latLng.mb,"nb":e.latLng.nb})){
+					lanlong.push({"mb": e.latLng.mb,"nb":e.latLng.nb});
+				}
+				placeMarker(e.latLng, map);
+				createroute(lanlong);
+			});
+		}
+		var myDataRef = new Firebase('https://colmap.firebaseio.com/maps');
+
+		myDataRef.on('child_added', function(snapshot) {
+			var message = snapshot.val();
+			lanlong.push({"mb": message.mb,"nb":message.nb});
+			placeMarker(new google.maps.LatLng(message.mb,message.nb));
 			createroute(lanlong);
 		});
-	}
-	var myDataRef = new Firebase('https://colmap.firebaseio.com/maps');
 
-	myDataRef.on('child_added', function(snapshot) {
-		var message = snapshot.val();
-		lanlong.push({"mb": message.mb,"nb":message.nb});
-		placeMarker(new google.maps.LatLng(message.mb,message.nb));
-		createroute(lanlong);
-	});
-
-	function isunique(lanlong,obj){
-		for(var i=0;i<lanlong.length;i++){
-			if(lanlong[i].mb==obj.mb && lanlong[i].nb==obj.nb){
-				return true;
+		function isunique(lanlong,obj){
+			for(var i=0;i<lanlong.length;i++){
+				if(lanlong[i].mb==obj.mb && lanlong[i].nb==obj.nb){
+					return true;
+				}
 			}
+			return false;
 		}
-		return false;
-	}
-	function createroute(lanlong){
-		if(lanlong.length!=1){
-			var or=new google.maps.LatLng(lanlong[0].mb,lanlong[0].nb);
-			var end=new google.maps.LatLng(lanlong[lanlong.length-1].mb,lanlong[lanlong.length-1].nb);
-			var waypts = [];
-			for(var i=1;i<lanlong.length-2;i++){
-				waypts.push({
-					location:new google.maps.LatLng(lanlong[i].mb,lanlong[i].nb),
-					stopover:true});
-			}
-			var request = {
-				origin:or,
-				destination:end,
-				waypoints: waypts,
+		function createroute(lanlong){
+			if(lanlong.length!=1){
+				var or=new google.maps.LatLng(lanlong[0].mb,lanlong[0].nb);
+				var end=new google.maps.LatLng(lanlong[lanlong.length-1].mb,lanlong[lanlong.length-1].nb);
+				var waypts = [];
+				for(var i=1;i<lanlong.length-2;i++){
+					waypts.push({
+						location:new google.maps.LatLng(lanlong[i].mb,lanlong[i].nb),
+						stopover:true});
+				}
+				var request = {
+					origin:or,
+					destination:end,
+					waypoints: waypts,
 				//optimizeWaypoints: true,
 				travelMode: google.maps.DirectionsTravelMode.DRIVING
 			};
@@ -94,34 +96,64 @@
 	}
 
 	google.maps.event.addDomListener(window, 'load', initialize);
+	$(function(){
+		var options = {
+          map: "#map-canvas"
+        };
+$("#geocomplete").geocomplete(options).bind("geocode:result", function(event, result){
+    console.log(result);
+    myDataRef.push({"mb":result.geometry.location.mb,"nb":result.geometry.location.nb});
+				if(!isunique(lanlong,{"mb": result.geometry.location.mb,"nb":result.geometry.location.nb})){
+					lanlong.push({"mb": result.geometry.location.mb,"nb":result.geometry.location.nb});
+				}
+				placeMarker(result.geometry.location, map);
+				createroute(lanlong);
+				addplacetoList(result);
+  });
+
+function addplacetoList(result){
+	$("#places").append("<li>"+result.formatted_address+"</li>");
+}
+// Trigger geocoding request.
+$("#find").click(function(){
+	$("#geocomplete").trigger("geocode");
+});
+	});
+	
 
 
-
-
-	</script>
+</script>
 </head>
 <body>
-<div class="navbar navbar-inverse ">
+	<div class="navbar navbar-inverse ">
 		<div class="navbar-inner">
 			<div class="container">
 				<button type="button" class="btn btn-navbar" data-toggle="collapse"
-					data-target=".nav-collapse">
-					<span class="icon-bar"></span> <span class="icon-bar"></span> <span
-						class="icon-bar"></span>
-				</button>
-				<a class="brand" href="#">ColMap</a>
-				<div class="nav-collapse collapse">
+				data-target=".nav-collapse">
+				<span class="icon-bar"></span> <span class="icon-bar"></span> <span
+				class="icon-bar"></span>
+			</button>
+			<a class="brand" href="#">ColMap</a>
+			<div class="nav-collapse collapse">
 				<ul class="nav">
 					
 				</ul>
 			</div>
-				<!--/.nav-collapse -->
-			</div>
+			<!--/.nav-collapse -->
 		</div>
 	</div>
-	<div class="span4">Mohit</div>
-	<div class="span12" id="map-canvas"/>
-	
+</div>
+<div class="span4">
+<div class="input-append">
+	<input id="geocomplete" type="text" placeholder="Type in an address" Autocomplete="off" class="span3">
+	<input id="find" type="button" value="Add" class="btn"/>
+</div>
+<div >
+	<ul id="places"></ul>
+</div>
+</div>
+<div class="span12" id="map-canvas"/>
+
 </body>
 
 </html>
